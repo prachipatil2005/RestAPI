@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import userModel from "../model/userModel.js";
 
 export const create = async (req, res) => {
@@ -7,14 +8,19 @@ export const create = async (req, res) => {
 
     const userExist = await userModel.findOne({ email });
     if (userExist) {
-      return res.status(400).json({ message: "user already exist" });
+      return res.status(400).json({ message: "User already exists" });
     }
+    await userData.validate();
     const savedUser = await userData.save();
     res.status(200).json(savedUser);
   } catch (error) {
-    res.status(500).json({ error: "Internal server Error" });
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ error: "Internal server error" });
   }
 };
+
 export const fetch = async (req, res) => {
   try {
     const users = await userModel.find();
@@ -23,7 +29,7 @@ export const fetch = async (req, res) => {
     }
     res.status(200).json(users);
   } catch (error) {
-    res.status(500).json({ error: "Internal server Error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 
@@ -32,29 +38,32 @@ export const update = async (req, res) => {
     const id = req.params.id;
     const userExist = await userModel.findOne({ _id: id });
     if (!userExist) {
-      return res.status(404).json({ message: "user not found." });
+      return res.status(404).json({ message: "User not found." });
     }
+    await userModel.validate(req.body);
     const updateUser = await userModel.findByIdAndUpdate(id, req.body, {
       new: true,
+      runValidators: true,
     });
     res.status(201).json(updateUser);
   } catch (error) {
-    res.status(500).json({ error: "Internal server Error" });
+    if (error instanceof mongoose.Error.ValidationError) {
+      return res.status(400).json({ message: error.message });
+    }
+    res.status(500).json({ error: "Internal server error" });
   }
 };
-
 
 export const deleteuser = async (req, res) => {
   try {
     const id = req.params.id;
     const userExist = await userModel.findOne({ _id: id });
     if (!userExist) {
-      return res.status(404).json({ message: "user not found." });
+      return res.status(404).json({ message: "User not found." });
     }
     await userModel.findByIdAndDelete(id);
-    res.status(201).json({message:"User deleted."})
-
+    res.status(201).json({ message: "User deleted." });
   } catch (error) {
-    res.status(500).json({ error: "Internal server Error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
