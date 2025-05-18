@@ -23,11 +23,34 @@ export const create = async (req, res) => {
 
 export const fetch = async (req, res) => {
   try {
-    const users = await userModel.find();
-    if (users.length === 0) {
-      return res.status(404).json({ message: "User not found" });
+    // Pagination
+    const page = parseInt(req.query.page) > 0 ? parseInt(req.query.page) : 1;
+    const limit =
+      parseInt(req.query.limit) > 0 ? parseInt(req.query.limit) : 10;
+    const skip = (page - 1) * limit;
+
+    // Filtering
+    const filter = {};
+    if (req.query.name) {
+      filter.name = { $regex: req.query.name, $options: "i" };
     }
-    res.status(200).json(users);
+    if (req.query.email) {
+      filter.email = { $regex: req.query.email, $options: "i" };
+    }
+    if (req.query.address) {
+      filter.address = { $regex: req.query.address, $options: "i" };
+    }
+
+    const users = await userModel.find(filter).skip(skip).limit(limit);
+    const total = await userModel.countDocuments(filter);
+
+    res.status(200).json({
+      users,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+      totalUsers: total,
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }

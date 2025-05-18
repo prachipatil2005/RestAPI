@@ -16,15 +16,33 @@ function App() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [filters, setFilters] = useState({ name: "", email: "", address: "" });
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
   const fetchUsers = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API_URL}/getAllUsers`);
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+        ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v)),
+      });
+      const res = await fetch(`${API_URL}/getAllUsers?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
-      setUsers(data);
+      if (Array.isArray(data)) {
+        setUsers(data);
+        setTotalPages(1);
+      } else if (data && Array.isArray(data.users)) {
+        setUsers(data.users);
+        setTotalPages(data.totalPages || 1);
+      } else {
+        setUsers([]);
+        setTotalPages(1);
+      }
     } catch {
       setError("Could not fetch users");
     } finally {
@@ -34,10 +52,16 @@ function App() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+    // eslint-disable-next-line
+  }, [page, filters]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilters({ ...filters, [e.target.name]: e.target.value });
+    setPage(1);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -123,33 +147,80 @@ function App() {
           </button>
         )}
       </form>
+      <form className="user-form">
+        <input
+          name="name"
+          placeholder="Filter by Name"
+          value={filters.name}
+          onChange={handleFilterChange}
+        />
+        <input
+          name="email"
+          placeholder="Filter by Email"
+          value={filters.email}
+          onChange={handleFilterChange}
+        />
+        <input
+          name="address"
+          placeholder="Filter by Address"
+          value={filters.address}
+          onChange={handleFilterChange}
+        />
+      </form>
       {error && <div className="error">{error}</div>}
       {loading ? (
         <div>Loading...</div>
       ) : (
-        <table className="user-table">
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Address</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map((user) => (
-              <tr key={user._id}>
-                <td>{user.name}</td>
-                <td>{user.email}</td>
-                <td>{user.address}</td>
-                <td>
-                  <button onClick={() => handleEdit(user)}>Edit</button>
-                  <button onClick={() => handleDelete(user._id)}>Delete</button>
-                </td>
+        <>
+          <table className="user-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Address</th>
+                <th>Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user._id}>
+                  <td>{user.name}</td>
+                  <td>{user.email}</td>
+                  <td>{user.address}</td>
+                  <td>
+                    <button onClick={() => handleEdit(user)}>Edit</button>
+                    <button onClick={() => handleDelete(user._id)}>
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              margin: "1rem 0",
+            }}
+          >
+            <button
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Previous
+            </button>
+            <span style={{ margin: "0 1rem" }}>
+              Page {page} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

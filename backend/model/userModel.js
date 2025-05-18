@@ -22,11 +22,6 @@ const userSchema = new mongoose.Schema({
     maxlength: [100, "Address must be at most 100 characters long"],
     trim: true,
   },
-  password: {
-    type: String,
-    required: [true, "Password is required"],
-    minlength: [6, "Password must be at least 6 characters long"],
-  },
 });
 
-export default mongoose.model("users", userSchema);
+export default mongoose.model("users(improve-functionality)", userSchema);
