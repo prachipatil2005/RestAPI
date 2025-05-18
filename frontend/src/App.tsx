@@ -1,12 +1,16 @@
+import {
+  Box,
+  Heading,
+  Spinner,
+  Flex,
+  Button,
+  ChakraProvider,
+} from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import "./App.css";
-
-interface User {
-  _id: string;
-  name: string;
-  email: string;
-  address: string;
-}
+import UserTable from "./UserTable";
+import UserForm from "./UserForm";
+import FilterForm from "./FilterForm";
+import type { User } from "./types.ts";
 
 const API_URL = "http://localhost:8000/api/user";
 
@@ -28,7 +32,7 @@ function App() {
       const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
-        ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v)),
+        ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)),
       });
       const res = await fetch(`${API_URL}/getAllUsers?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to fetch users");
@@ -78,11 +82,15 @@ function App() {
       );
       if (!res.ok) {
         const errData = await res.json();
+        setError(errData.message || "Error");
         throw new Error(errData.message || "Error");
       }
       setForm({ name: "", email: "", address: "" });
       setEditingId(null);
       fetchUsers();
+      setError(
+        editingId ? "User updated successfully" : "User added successfully"
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     }
@@ -100,129 +108,76 @@ function App() {
       const res = await fetch(`${API_URL}/delete/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const errData = await res.json();
+        setError(errData.message || "Error");
         throw new Error(errData.message || "Error");
       }
       fetchUsers();
+      setError("User deleted successfully");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     }
   };
 
   return (
-    <div className="container">
-      <h1>User CRUD</h1>
-      <form onSubmit={handleSubmit} className="user-form">
-        <input
-          name="name"
-          placeholder="Name"
-          value={form.name}
+    <ChakraProvider>
+      <Box
+        maxW="900px"
+        mx="auto"
+        mt={8}
+        p={6}
+        bg="white"
+        borderRadius="md"
+        boxShadow="md"
+      >
+        <Heading mb={6} textAlign="center">
+          User CRUD
+        </Heading>
+        <UserForm
+          form={form}
+          editingId={editingId}
           onChange={handleChange}
-          required
+          onSubmit={handleSubmit}
+          onCancel={() => {
+            setEditingId(null);
+            setForm({ name: "", email: "", address: "" });
+          }}
         />
-        <input
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-          required
-          disabled={!!editingId}
-        />
-        <input
-          name="address"
-          placeholder="Address"
-          value={form.address}
-          onChange={handleChange}
-          required
-        />
-        <button type="submit">{editingId ? "Update" : "Add"} User</button>
-        {editingId && (
-          <button
-            type="button"
-            onClick={() => {
-              setEditingId(null);
-              setForm({ name: "", email: "", address: "" });
-            }}
-          >
-            Cancel
-          </button>
+        <FilterForm filters={filters} onChange={handleFilterChange} />
+        {error && (
+          <Box color="red.500" mb={2}>
+            {error}
+          </Box>
         )}
-      </form>
-      <form className="user-form">
-        <input
-          name="name"
-          placeholder="Filter by Name"
-          value={filters.name}
-          onChange={handleFilterChange}
-        />
-        <input
-          name="email"
-          placeholder="Filter by Email"
-          value={filters.email}
-          onChange={handleFilterChange}
-        />
-        <input
-          name="address"
-          placeholder="Filter by Address"
-          value={filters.address}
-          onChange={handleFilterChange}
-        />
-      </form>
-      {error && <div className="error">{error}</div>}
-      {loading ? (
-        <div>Loading...</div>
-      ) : (
-        <>
-          <table className="user-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Address</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user._id}>
-                  <td>{user.name}</td>
-                  <td>{user.email}</td>
-                  <td>{user.address}</td>
-                  <td>
-                    <button onClick={() => handleEdit(user)}>Edit</button>
-                    <button onClick={() => handleDelete(user._id)}>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              margin: "1rem 0",
-            }}
+        {loading ? (
+          <Flex justify="center" align="center" minH="200px">
+            <Spinner size="xl" />
+          </Flex>
+        ) : (
+          <UserTable
+            users={users}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+        <Flex justify="center" align="center" mt={4} gap={4}>
+          <Button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
           >
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-            >
-              Previous
-            </button>
-            <span style={{ margin: "0 1rem" }}>
-              Page {page} of {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-            >
-              Next
-            </button>
-          </div>
-        </>
-      )}
-    </div>
+            Previous
+          </Button>
+          <Box>
+            Page {page} of {totalPages}
+          </Box>
+          <Button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+          >
+            Next
+          </Button>
+        </Flex>
+      </Box>
+    </ChakraProvider>
   );
 }
 
