@@ -1,11 +1,3 @@
-import {
-  Box,
-  Heading,
-  Spinner,
-  Flex,
-  Button,
-  ChakraProvider,
-} from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import UserTable from "./UserTable";
 import UserForm from "./UserForm";
@@ -119,65 +111,51 @@ function App() {
   };
 
   return (
-    <ChakraProvider>
-      <Box
-        maxW="900px"
-        mx="auto"
-        mt={8}
-        p={6}
-        bg="white"
-        borderRadius="md"
-        boxShadow="md"
+    <div className="container">
+      <h1>User CRUD</h1>
+      <UserForm
+        form={form}
+        editingId={editingId}
+        onChange={handleChange}
+        onSubmit={handleSubmit}
+        onCancel={() => {
+          setEditingId(null);
+          setForm({ name: "", email: "", address: "" });
+        }}
+      />
+      <FilterForm filters={filters} onChange={handleFilterChange} />
+      {error && <div className="error">{error}</div>}
+      {loading ? (
+        <div style={{ textAlign: "center", minHeight: 200 }}>Loading...</div>
+      ) : (
+        <UserTable users={users} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 16,
+          gap: 16,
+        }}
       >
-        <Heading mb={6} textAlign="center">
-          User CRUD
-        </Heading>
-        <UserForm
-          form={form}
-          editingId={editingId}
-          onChange={handleChange}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setEditingId(null);
-            setForm({ name: "", email: "", address: "" });
-          }}
-        />
-        <FilterForm filters={filters} onChange={handleFilterChange} />
-        {error && (
-          <Box color="red.500" mb={2}>
-            {error}
-          </Box>
-        )}
-        {loading ? (
-          <Flex justify="center" align="center" minH="200px">
-            <Spinner size="xl" />
-          </Flex>
-        ) : (
-          <UserTable
-            users={users}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        )}
-        <Flex justify="center" align="center" mt={4} gap={4}>
-          <Button
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <Box>
-            Page {page} of {totalPages}
-          </Box>
-          <Button
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
-          >
-            Next
-          </Button>
-        </Flex>
-      </Box>
-    </ChakraProvider>
+        <button
+          onClick={() => setPage((p) => Math.max(1, p - 1))}
+          disabled={page === 1}
+        >
+          Previous
+        </button>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <button
+          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+          disabled={page === totalPages}
+        >
+          Next
+        </button>
+      </div>
+    </div>
   );
 }
 
