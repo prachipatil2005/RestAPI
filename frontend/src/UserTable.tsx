@@ -1,4 +1,3 @@
-import { Table, Button } from "@chakra-ui/react";
 import type { User } from "./types.ts";
 
 interface UserTableProps {
@@ -9,7 +8,7 @@ interface UserTableProps {
 
 export default function UserTable({ users, onEdit, onDelete }: UserTableProps) {
   return (
-    <Table variant="simple" size="md">
+    <table className="user-table">
       <thead>
         <tr>
           <th>Name</th>
@@ -25,25 +24,12 @@ export default function UserTable({ users, onEdit, onDelete }: UserTableProps) {
             <td>{user.email}</td>
             <td>{user.address}</td>
             <td>
-              <Button
-                colorScheme="blue"
-                size="sm"
-                mr={2}
-                onClick={() => onEdit(user)}
-              >
-                Edit
-              </Button>
-              <Button
-                colorScheme="red"
-                size="sm"
-                onClick={() => onDelete(user._id)}
-              >
-                Delete
-              </Button>
+              <button onClick={() => onEdit(user)}>Edit</button>
+              <button onClick={() => onDelete(user._id)}>Delete</button>
             </td>
           </tr>
         ))}
       </tbody>
-    </Table>
+    </table>
   );
 }
